@@ -140,9 +140,6 @@ function renderCards(list) {
     if (q.category2) {
       tagsHTML += `<span class="tag ${getCategoryClass(q.category2)}">${q.category2}</span>`;
     }
-    if (q.highlight) {
-      tagsHTML += `<span class="tag highlight">${q.highlight}</span>`;
-    }
 
     card.innerHTML = `
       <div class="q-card-top">
