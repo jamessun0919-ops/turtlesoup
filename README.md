@@ -6,12 +6,12 @@
 
 ---
 
-## 🚀 體驗按鈕 (Demo Actions)
+## 🚀 體驗通道 (Demo Access)
 
-| 💻 本機啟動體驗 | ⚡ 一鍵雲端部署 (線上 Demo) |
-| :---: | :---: |
-| [![Local Demo](https://img.shields.io/badge/Local_Play-http%3A%2F%2Flocalhost%3A3000-D4AF37?style=for-the-badge&logo=localhost)](http://localhost:3000) | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fjamessun0919-ops%2Fturtlesoup&env=GEMINI_API_KEY&project-name=turtlesoup-ai) |
-| *請先於本機安裝依賴並啟動 Node 伺服器* | *一鍵將本專案複製並部署至您個人的 Vercel 平台，僅需填入金鑰即可開啟線上免金鑰 Demo！* |
+| 🌐 線上即時體驗 (Render Live) | 💻 本機開發遊玩 | ⚡ 一鍵雲端複製 (Vercel) |
+| :---: | :---: | :---: |
+| [![Live Demo](https://img.shields.io/badge/Live_Demo-Render-00c0a5?style=for-the-badge&logo=render)](https://turtlesoup-o7au.onrender.com) | [![Local Play](https://img.shields.io/badge/Local_Play-http%3A%2F%2Flocalhost%3A3000-D4AF37?style=for-the-badge&logo=localhost)](http://localhost:3000) | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fjamessun0919-ops%2Fturtlesoup&env=GEMINI_API_KEY&project-name=turtlesoup-ai) |
+| *直接點擊開啟線上版遊玩* | *本機啟動 Node 伺服器後遊玩* | *一鍵複製部署至您個人的平台* |
 
 ---
 
