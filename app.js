@@ -283,6 +283,24 @@ async function handleHostResponse(userInput, isGuess = false) {
   const apiQuery = isGuess ? `推論：${userInput}` : `提問：${userInput}`;
   chatHistory.push({ role: "user", parts: [{ text: apiQuery }] });
 
+  // 檢查是否包含任一解答關鍵字
+  const hasKeyword = currentGame && currentGame.keys && Array.isArray(currentGame.keys) && currentGame.keys.some(key => {
+    return key && userInput.toLowerCase().includes(key.toLowerCase());
+  });
+
+  if (hasKeyword) {
+    // 模擬打字延遲，然後判定挑戰成功並顯示完整湯底
+    setTimeout(() => {
+      typingIndicator.remove();
+      const replyText = "恭喜你，你的提問中包含了關鍵字！恭喜你，你解開了這碗海龜湯！";
+      chatHistory.push({ role: "model", parts: [{ text: replyText }] });
+      appendHostMessage(replyText);
+      appendToDeductionLog(questionCount, userInput, "是");
+      setTimeout(() => triggerEnding(true), 1500);
+    }, 600);
+    return;
+  }
+
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
