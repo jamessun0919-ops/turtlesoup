@@ -143,11 +143,13 @@ function renderCards(list) {
 
     card.innerHTML = `
       <div class="q-card-top">
-        <div class="q-card-tags">${tagsHTML}</div>
+        <div class="q-card-tags">
+          <span class="q-card-id">No. ${q.id}</span>
+          ${tagsHTML}
+        </div>
         <h3 class="q-card-title">${q.title}</h3>
       </div>
       <div class="q-card-bottom">
-        <span class="q-card-id">No. ${q.id}</span>
         <button class="q-card-btn">開始推理 <i class="fa-solid fa-chevron-right"></i></button>
       </div>
     `;

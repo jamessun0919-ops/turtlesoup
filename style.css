@@ -234,6 +234,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+  align-items: center;
 }
 
 .tag {
@@ -279,7 +280,7 @@ body {
 
 .q-card-bottom {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-top: auto;
 }
