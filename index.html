@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>海龜湯推理館 - AI 智慧主持人</title>
+  <!-- SEO & Meta -->
+  <meta name="description" content="精選經典海龜湯題目，由 AI 擔任智慧主持人，為您進行互動推理遊戲。支援提示開關，嚴格是、否、是也不是、無關回答模式。">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons for better UI styling -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Background overlay for mystery atmosphere -->
+  <div class="mystery-bg"></div>
+
+  <!-- Main App Wrapper -->
+  <div id="app-container">
+
+    <!-- Header Area -->
+    <header class="app-header">
+      <div class="logo-area">
+        <i class="fa-solid fa-shrimp logo-icon"></i>
+        <h1 class="main-title">海龜湯推理館</h1>
+      </div>
+      <p class="subtitle">AI Host • Lateral Thinking Puzzles</p>
+    </header>
+
+    <!-- 1. LOBBY VIEW (關卡選擇大廳) -->
+    <main id="lobby-view" class="view-section">
+      <div class="lobby-controls">
+        <!-- Search bar -->
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="search-input" placeholder="搜尋題目名稱、關鍵字..." autocomplete="off">
+        </div>
+        <!-- Category filters -->
+        <div class="filter-group">
+          <button class="filter-btn active" data-category="all">全部</button>
+          <button class="filter-btn" data-category="經典">經典</button>
+          <button class="filter-btn" data-category="日常">日常</button>
+          <button class="filter-btn" data-category="犯罪">犯罪</button>
+        </div>
+      </div>
+
+      <!-- Question Cards Grid -->
+      <div id="card-grid" class="card-grid">
+        <!-- Dynamic loading of cards via JavaScript -->
+        <div class="loading-spinner">
+          <i class="fa-solid fa-circle-notch fa-spin"></i> 正在載入題目清單...
+        </div>
+      </div>
+    </main>
+
+    <!-- 2. GAME PLAY VIEW (遊戲進行畫面) -->
+    <main id="game-view" class="view-section hidden">
+      <!-- Top Action Bar -->
+      <div class="game-top-bar">
+        <button id="btn-back" class="action-btn-outline">
+          <i class="fa-solid fa-arrow-left-long"></i> 返回大廳
+        </button>
+        <div id="current-game-title" class="game-heading">海龜湯載入中...</div>
+      </div>
+
+      <!-- Main Layout: Game Area (Left) and Control Panel (Right) -->
+      <div class="game-layout">
+        
+        <!-- Left: Riddle Display and Chat -->
+        <div class="game-left">
+          
+          <!-- The Soup (Riddle Card) -->
+          <section class="riddle-card">
+            <div class="card-header">
+              <span class="card-tag"><i class="fa-solid fa-water"></i> 湯面（謎題）</span>
+            </div>
+            <div id="riddle-text" class="riddle-body">
+              正在請主持人熬製湯底，請稍候...
+            </div>
+          </section>
+
+          <!-- Chat Dialog Area -->
+          <section class="chat-section">
+            <div id="chat-box" class="chat-box">
+              <!-- Welcome message from AI -->
+              <div class="msg-bubble system">
+                <div class="msg-content">
+                  歡迎來到本關卡。我是主持人，請向我提出可以用「是」或「否」回答的問題，來一步步還原真相。
+                </div>
+              </div>
+            </div>
+            
+            <!-- Question Input -->
+            <form id="chat-form" class="chat-form-container">
+              <input type="text" id="chat-input" placeholder="向主持人提問..." required autocomplete="off" disabled>
+              <button type="submit" id="btn-send" class="btn-send" disabled>
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+            </form>
+          </section>
+        </div>
+
+        <!-- Right: Game Status & Inferences -->
+        <aside class="game-right">
+          
+          <!-- Scoreboard / Status -->
+          <div class="dashboard-panel">
+            <h3><i class="fa-solid fa-gauge-high"></i> 遊戲狀態</h3>
+            
+            <div class="status-item">
+              <span class="status-label">已提問次數</span>
+              <span id="stat-count" class="status-value highlight-num">0</span>
+            </div>
+
+            <!-- Hint Mode Switcher -->
+            <div class="status-item hint-toggle-container">
+              <span class="status-label">智慧提示模式</span>
+              <label class="switch">
+                <input type="checkbox" id="hint-toggle">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <p class="hint-mode-desc">
+              開啟時，AI 在回答時會給予委婉提示；關閉時，AI 僅嚴格回答「是、否、是也不是、無關」。
+            </p>
+          </div>
+
+          <!-- Q&A History Log / Deduction Notebook -->
+          <div class="dashboard-panel log-panel">
+            <h3><i class="fa-solid fa-note-sticky"></i> 推理筆記</h3>
+            <p class="panel-desc">僅記錄提問前 10 字摘要與 AI 核心判定（是/否/是也不是/無關）：</p>
+            <div class="log-table-wrapper">
+              <table class="log-table">
+                <thead>
+                  <tr>
+                    <th style="width: 15%; text-align: center;">#</th>
+                    <th style="width: 55%; text-align: left;">提問摘要</th>
+                    <th style="width: 30%; text-align: center;">判定</th>
+                  </tr>
+                </thead>
+                <tbody id="log-body">
+                  <!-- JS 動態新增表格行 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Guess/Inference Area -->
+          <div class="dashboard-panel guess-panel">
+            <h3><i class="fa-solid fa-lightbulb"></i> 猜測真相</h3>
+            <p class="panel-desc">若你認為已經掌握了事情的全貌，在此提交你的推論：</p>
+            <textarea id="guess-input" placeholder="請寫下你拼湊出的完整故事真相..." disabled></textarea>
+            <button id="btn-guess" class="action-btn-gold" disabled>
+              <i class="fa-solid fa-circle-check"></i> 提交推論
+            </button>
+          </div>
+
+          <!-- Danger Area / Give Up -->
+          <div class="dashboard-panel giveup-panel">
+            <button id="btn-reveal" class="action-btn-danger" disabled>
+              <i class="fa-solid fa-eye"></i> 放棄並觀看完整湯底
+            </button>
+          </div>
+
+        </aside>
+
+      </div>
+    </main>
+
+    <!-- 3. ENDING MODAL / SCREEN (破案/放棄揭曉畫面) -->
+    <div id="ending-overlay" class="overlay hidden">
+      <div class="ending-card">
+        <div id="ending-header" class="ending-header">
+          <i class="fa-solid fa-trophy trophy-icon"></i>
+          <h2 id="ending-title">恭喜破案！</h2>
+        </div>
+        
+        <div class="ending-stats">
+          <p>共計發問：<span id="ending-count" class="highlight-num">0</span> 次</p>
+        </div>
+
+        <div class="ending-body">
+          <h3><i class="fa-solid fa-scroll"></i> 完整湯底答案：</h3>
+          <div id="ending-solution-text" class="ending-solution-box">
+            <!-- Full explanation of the story -->
+          </div>
+        </div>
+
+        <div class="ending-actions">
+          <button id="btn-ending-lobby" class="action-btn-gold">返回題目大廳</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="app-footer">
+    <p>© 2026 海龜湯推理館 • AI Hosted Edition</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

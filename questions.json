@@ -1,0 +1,244 @@
+[
+  {
+    "note": "欄位說明",
+    "schema": {
+      "title": "簡要標題",
+      "description": "湯面，顯示給使用者，提供給使用者解謎的線索",
+      "solution": "湯底，使用者回答正確或提前結束遊戲室提供的正確解答，也是AI主持人判斷玩家提問的依據。"
+    }
+  },
+  {
+    "id": "1",
+    "title": "新高跟鞋",
+    "description": "一個女孩買了一雙漂亮的新高跟鞋。當晚，她去上班，結果慘死在工作崗位上。為什麼？",
+    "solution": "她是馬戲團裡飛刀表演的助手。表演時，她蒙眼站立，飛刀手蒙眼朝她周圍扔刀。平時她穿平底鞋，這天她穿了新買的高跟鞋，導致身高稍微增加。飛刀手仍照平時習慣的高度扔刀，結果飛刀直接刺中她的頭部致死。",
+    "category1": "",
+    "category2": "",
+    "highlight": "職業特殊性"
+  },
+  {
+    "id": "2",
+    "title": "隨手關燈",
+    "description": "男子隨手關了燈，倒頭就睡。隔天醒來，他看了看報紙，痛哭流涕，接著走到陽台一躍而下。為什麼？",
+    "solution": "這名男子是一位燈塔看守員。昨晚他回家時隨手把路過的燈關掉，卻沒意識到那是燈塔的指引燈。結果一艘輪船在黑夜中迷失方向，觸礁沉沒，船上所有人遇難。隔天早上他看到報紙新聞後無比自責，於是跳樓自殺。",
+    "category1": "經典",
+    "category2": "",
+    "highlight": "職業特殊性"
+  },
+  {
+    "id": "3",
+    "title": "最後大餐",
+    "description": "馬奇享用了一頓豐盛的大餐，隨後便渾身是血地死去了。這是為什麼？",
+    "solution": "馬奇是一隻母蚊子。牠吸飽了人類的血（大餐），因為吸得太飽飛不動，被發現後一巴掌將蚊子拍死。",
+    "category1": "",
+    "category2": "日常",
+    "highlight": "角色特殊性"
+  },
+  {
+    "id": "4",
+    "title": "離奇死亡",
+    "description": "",
+    "solution": "破碎金魚缸",
+    "category1": "",
+    "category2": "",
+    "highlight": "角色特殊性"
+  },
+  {
+    "id": "5",
+    "title": "絕望歌聲",
+    "description": "",
+    "solution": "霸王別姬",
+    "category1": "",
+    "category2": "",
+    "highlight": "歷史故事"
+  },
+  {
+    "id": "6",
+    "title": "姊妹葬禮",
+    "description": "",
+    "solution": "",
+    "category1": "經典",
+    "category2": "犯罪",
+    "highlight": "犯罪心理"
+  },
+  {
+    "id": "7",
+    "title": "焚燒藝術品",
+    "description": "",
+    "solution": "刺青",
+    "category1": "",
+    "category2": "",
+    "highlight": "物品名稱盲點"
+  },
+  {
+    "id": "8",
+    "title": "末日鈴聲",
+    "description": "",
+    "solution": "",
+    "category1": "",
+    "category2": "",
+    "highlight": "日常生活盲點"
+  },
+  {
+    "id": "9",
+    "title": "書裡百鈔",
+    "description": "",
+    "solution": "",
+    "category1": "",
+    "category2": "",
+    "highlight": "價值觀盲點"
+  },
+  {
+    "id": "10",
+    "title": "遛狗之人",
+    "description": "",
+    "solution": "目擊殺人以為逃過一劫",
+    "category1": "",
+    "category2": "日常",
+    "highlight": "角色特殊性"
+  },
+  {
+    "id": "11",
+    "title": "兒子葬禮",
+    "description": "",
+    "solution": "母親殺死兒子的器官受贈者",
+    "category1": "",
+    "category2": "犯罪",
+    "highlight": ""
+  },
+  {
+    "id": "12",
+    "title": "高樓電梯",
+    "description": "",
+    "solution": "身高不夠",
+    "category1": "",
+    "category2": "日常",
+    "highlight": "日常生活盲點"
+  },
+  {
+    "id": "13",
+    "title": "對向黑車",
+    "description": "",
+    "solution": "路燈故障也無星無月",
+    "category1": "經典",
+    "category2": "日常",
+    "highlight": "文字陷阱"
+  },
+  {
+    "id": "14",
+    "title": "銷毀高價品",
+    "description": "",
+    "solution": "高價票券剪票，持有者仍然高興",
+    "category1": "",
+    "category2": "日常",
+    "highlight": "文字陷阱／日常生活"
+  },
+  {
+    "id": "15",
+    "title": "渾身血跡的陌生人",
+    "description": "",
+    "solution": "高速行駛的車裡孕婦",
+    "category1": "",
+    "category2": "",
+    "highlight": ""
+  },
+  {
+    "id": "16",
+    "title": "山路巴士",
+    "description": "",
+    "solution": "下車後的車輛遇到落石",
+    "category1": "",
+    "category2": "日常",
+    "highlight": ""
+  },
+  {
+    "id": "17",
+    "title": "全班舉手",
+    "description": "",
+    "solution": "會的人舉右手／不會地舉左手",
+    "category1": "",
+    "category2": "日常",
+    "highlight": ""
+  },
+  {
+    "id": "18",
+    "title": "固定時間死亡的病床",
+    "description": "",
+    "solution": "打掃拔插頭",
+    "category1": "",
+    "category2": "",
+    "highlight": ""
+  },
+  {
+    "id": "19",
+    "title": "販賣機硬幣殺人",
+    "description": "",
+    "solution": "硬幣裝在襪子裡",
+    "category1": "",
+    "category2": "犯罪",
+    "highlight": ""
+  },
+  {
+    "id": "20",
+    "title": "罪犯整形",
+    "description": "",
+    "solution": "整形成另一個通緝犯",
+    "category1": "",
+    "category2": "",
+    "highlight": ""
+  },
+  {
+    "id": "21",
+    "title": "開窗即死",
+    "description": "",
+    "solution": "飛機/潛水艇",
+    "category1": "",
+    "category2": "",
+    "highlight": ""
+  },
+  {
+    "id": "22",
+    "title": "書本第50頁",
+    "description": "",
+    "solution": "記得是否借過這本書",
+    "category1": "",
+    "category2": "",
+    "highlight": ""
+  },
+  {
+    "id": "23",
+    "title": "自打巴掌",
+    "description": "",
+    "solution": "半夜醒來被蚊子吵醒,點了蚊香後睡著",
+    "category1": "",
+    "category2": "日常",
+    "highlight": ""
+  },
+  {
+    "id": "24",
+    "title": "分手吧",
+    "description": "",
+    "solution": "受困,分食第三人的手",
+    "category1": "",
+    "category2": "犯罪",
+    "highlight": ""
+  },
+  {
+    "id": "25",
+    "title": "崇拜爸爸的兒子",
+    "description": "",
+    "solution": "爸爸是魔術師，兒子切母親",
+    "category1": "",
+    "category2": "犯罪",
+    "highlight": ""
+  },
+  {
+    "id": "26",
+    "title": "女聲",
+    "description": "",
+    "solution": "藍芽連接斷開，手機掉在車上",
+    "category1": "",
+    "category2": "日常",
+    "highlight": ""
+  }
+]
