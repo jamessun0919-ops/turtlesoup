@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/chat",
+      "dest": "server.js"
+    },
+    {
+      "src": "/questions.json",
+      "dest": "questions.json"
+    },
+    {
+      "src": "/rules_host.txt",
+      "dest": "rules_host.txt"
+    },
+    {
+      "src": "/rules_hint.txt",
+      "dest": "rules_hint.txt"
+    },
+    {
+      "src": "/app.js",
+      "dest": "app.js"
+    },
+    {
+      "src": "/style.css",
+      "dest": "style.css"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "index.html"
+    }
+  ]
+}
