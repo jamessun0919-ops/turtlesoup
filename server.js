@@ -16,20 +16,21 @@ app.use(express.static(path.join(__dirname)));
 
 // 遊戲問答代理端點 (POST /api/chat)
 app.post('/api/chat', async (req, res) => {
-  const { messages, isHintMode, game } = req.body;
-  
+  const { messages, isHintMode, game, provider } = req.body;
+
   if (!messages || !game) {
-    return res.status(400).json({ 
-      error: "INVALID_REQUEST", 
-      message: "缺少必要參數 (messages, game)" 
+    return res.status(400).json({
+      error: "INVALID_REQUEST",
+      message: "缺少必要參數 (messages, game)"
     });
   }
-  
-  const apiKey = process.env.GEMINI_API_KEY;
-  const isMockMode = !apiKey || apiKey === "YOUR_GEMINI_API_KEY_HERE" || apiKey.trim() === "";
-  
+
+  const aiProvider = provider === "gpt" ? "gpt" : "gemini";
+  const apiKey = aiProvider === "gpt" ? process.env.OPENAI_API_KEY : process.env.GEMINI_API_KEY;
+  const isMockMode = !apiKey || apiKey === "YOUR_GEMINI_API_KEY_HERE" || apiKey === "YOUR_OPENAI_API_KEY_HERE" || apiKey.trim() === "";
+
   if (isMockMode) {
-    console.log(`[提示] 偵測到 API 金鑰尚未配置。系統已啟用「AI 主持人模擬器 (Mock Mode)」以供功能展示與測試。`);
+    console.log(`[提示] 偵測到 ${aiProvider === "gpt" ? "OpenAI" : "Gemini"} API 金鑰尚未配置。系統已啟用「AI 主持人模擬器 (Mock Mode)」以供功能展示與測試。`);
   }
   
   try {
@@ -107,6 +108,61 @@ app.post('/api/chat', async (req, res) => {
       湯底（故事真相答案）：${game.solution}
     `;
     
+    // GPT (OpenAI) 分支：與 Gemini 共用規則與謎題的 systemInstruction，訊息格式需轉換
+    if (aiProvider === "gpt") {
+      const openaiModel = process.env.OPENAI_MODEL || "gpt-4o-mini";
+      const openaiMessages = [
+        { role: "system", content: systemInstruction },
+        ...messages.map(m => ({
+          role: m.role === "model" ? "assistant" : "user",
+          content: (m.parts || []).map(p => p.text).join("")
+        }))
+      ];
+
+      const apiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: openaiModel,
+          messages: openaiMessages,
+          temperature: 0.2
+        })
+      });
+
+      if (!apiRes.ok) {
+        const errData = await apiRes.json().catch(() => ({}));
+        const errMsg = errData.error?.message || "OpenAI API 呼叫失敗";
+        console.error(`[API錯誤] OpenAI (${openaiModel}) 呼叫失敗 (狀態碼 ${apiRes.status}): ${errMsg}`);
+
+        if (apiRes.status === 429) {
+          return res.status(429).json({
+            error: "RESOURCE_EXHAUSTED",
+            message: "目前 AI 主持人存取次數過於頻繁，或伺服器負載過高。請稍候再試。"
+          });
+        }
+
+        return res.status(500).json({
+          error: "API_ERROR",
+          message: `AI 主持人連線失敗 (${errMsg})`
+        });
+      }
+
+      const data = await apiRes.json();
+      const responseText = data.choices?.[0]?.message?.content;
+
+      if (!responseText) {
+        return res.status(500).json({
+          error: "EMPTY_RESPONSE",
+          message: "AI 主持人沒有給予任何回覆。"
+        });
+      }
+
+      return res.json({ reply: responseText });
+    }
+
     const models = ["gemini-3.5-flash", "gemini-2.5-flash"];
     let apiRes;
     let currentModel = "";

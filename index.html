@@ -23,28 +23,28 @@
   <div id="app-container">
 
     <!-- Header Area -->
-    <header class="app-header">
+    <header id="app-header" class="app-header">
       <div class="logo-area">
-        <i class="fa-solid fa-shrimp logo-icon"></i>
+        <img src="shrimp-logo.png" alt="" class="logo-icon">
         <h1 class="main-title">海龜湯推理館</h1>
       </div>
-      <p class="subtitle">AI Host • Lateral Thinking Puzzles</p>
+      <p class="subtitle">
+        海龜湯正式名稱為情境猜謎或水平思考遊戲（Lateral Thinking Puzzle）。<br>
+        遊戲由出題者提出一段不尋常的事件開頭，猜題者透過提問拼湊真相。<br>
+        出題者僅能回答「是」、「不是」、「是也不是」或「無關」，考驗玩家的邏輯與創造力。
+      </p>
     </header>
 
     <!-- 1. LOBBY VIEW (關卡選擇大廳) -->
     <main id="lobby-view" class="view-section">
       <div class="lobby-controls">
-        <!-- Search bar -->
-        <div class="search-box">
-          <i class="fa-solid fa-magnifying-glass search-icon"></i>
-          <input type="text" id="search-input" placeholder="搜尋題目名稱、關鍵字..." autocomplete="off">
-        </div>
         <!-- Category filters -->
         <div class="filter-group">
           <button class="filter-btn active" data-category="all">全部</button>
           <button class="filter-btn" data-category="經典">經典</button>
           <button class="filter-btn" data-category="日常">日常</button>
           <button class="filter-btn" data-category="犯罪">犯罪</button>
+          <button class="filter-btn" data-category="盲點">盲點</button>
         </div>
       </div>
 
@@ -96,7 +96,7 @@
             
             <!-- Question Input -->
             <form id="chat-form" class="chat-form-container">
-              <input type="text" id="chat-input" placeholder="向主持人提問..." required autocomplete="off" disabled>
+              <input type="text" id="chat-input" placeholder="AI 主持人已就位，請開始發問。" required autocomplete="off" disabled>
               <button type="submit" id="btn-send" class="btn-send" disabled>
                 <i class="fa-solid fa-paper-plane"></i>
               </button>
@@ -127,6 +127,16 @@
             <p class="hint-mode-desc">
               開啟時，AI 在回答時會給予委婉提示；關閉時，AI 僅嚴格回答「是、否、是也不是、無關」。
             </p>
+
+            <!-- AI Host Switcher -->
+            <div class="status-item ai-toggle-container">
+              <span class="status-label">主持人 AI</span>
+              <div class="ai-switch-group">
+                <button type="button" class="ai-btn active" data-provider="gemini">Gemini</button>
+                <button type="button" class="ai-btn" data-provider="gpt">GPT</button>
+              </div>
+            </div>
+            <p class="hint-mode-desc">選擇後將鎖定，同一場遊戲中無法再切換主持人 AI。</p>
           </div>
 
           <!-- Q&A History Log / Deduction Notebook -->

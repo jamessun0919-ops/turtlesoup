@@ -9,15 +9,18 @@ let chatHistory = [];
 let questionCount = 0;
 let isHintMode = false;
 let isGenerating = false;
+let aiProvider = "gemini";
+let aiProviderLocked = false;
 
 // ==========================================
 // 2. DOM 元素選取
 // ==========================================
+const appHeader = document.getElementById("app-header");
 const lobbyView = document.getElementById("lobby-view");
 const gameView = document.getElementById("game-view");
 const cardGrid = document.getElementById("card-grid");
-const searchInput = document.getElementById("search-input");
 const filterBtns = document.querySelectorAll(".filter-btn");
+const aiProviderBtns = document.querySelectorAll(".ai-btn");
 
 const btnBack = document.getElementById("btn-back");
 const currentGameTitle = document.getElementById("current-game-title");
@@ -75,9 +78,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 function initLobby() {
   renderCards(questions);
 
-  // 搜尋功能
-  searchInput.addEventListener("input", filterLobby);
-
   // 分類篩選
   filterBtns.forEach(btn => {
     btn.addEventListener("click", (e) => {
@@ -96,20 +96,13 @@ function initLobby() {
 }
 
 function filterLobby() {
-  const query = searchInput.value.trim().toLowerCase();
   const activeBtn = document.querySelector(".filter-btn.active");
   const category = activeBtn ? activeBtn.getAttribute("data-category") : "all";
 
   const filtered = questions.filter(q => {
-    const matchesSearch = q.title.toLowerCase().includes(query) || 
-                          (q.highlight && q.highlight.toLowerCase().includes(query)) ||
-                          (q.category1 && q.category1.toLowerCase().includes(query));
-    
-    const matchesCategory = category === "all" || 
-                            q.category1 === category || 
-                            q.category2 === category;
-
-    return matchesSearch && matchesCategory;
+    return category === "all" ||
+           q.category1 === category ||
+           q.category2 === category;
   });
 
   renderCards(filtered);
@@ -143,13 +136,11 @@ function renderCards(list) {
 
     card.innerHTML = `
       <div class="q-card-top">
-        <div class="q-card-tags">
-          <span class="q-card-id">No. ${q.id}</span>
-          ${tagsHTML}
-        </div>
-        <h3 class="q-card-title">${q.title}</h3>
+        <span class="q-card-id">No. ${q.id}</span>
+        ${tagsHTML}
       </div>
       <div class="q-card-bottom">
+        <h3 class="q-card-title">${q.title}</h3>
         <button class="q-card-btn">開始推理 <i class="fa-solid fa-chevron-right"></i></button>
       </div>
     `;
@@ -163,7 +154,35 @@ function getCategoryClass(cat) {
   if (cat === "經典") return "classic";
   if (cat === "犯罪") return "crime";
   if (cat === "日常") return "daily";
+  if (cat === "盲點") return "blindspot";
   return "";
+}
+
+// ==========================================
+// 4.5 主持人 AI 切換（Gemini／GPT）
+// ==========================================
+aiProviderBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (aiProviderLocked) return;
+
+    aiProviderBtns.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    aiProvider = btn.getAttribute("data-provider");
+
+    aiProviderLocked = true;
+    aiProviderBtns.forEach(b => b.disabled = true);
+
+    appendSystemMessage(`已鎖定主持人 AI：${aiProvider === "gpt" ? "GPT" : "Gemini"}（本場遊戲無法再切換）`);
+  });
+});
+
+function resetAIProviderSwitch() {
+  aiProvider = "gemini";
+  aiProviderLocked = false;
+  aiProviderBtns.forEach(b => {
+    b.disabled = false;
+    b.classList.toggle("active", b.getAttribute("data-provider") === "gemini");
+  });
 }
 
 // ==========================================
@@ -174,11 +193,13 @@ function startNewGame(question) {
   questionCount = 0;
   chatHistory = [];
   isGenerating = false;
+  resetAIProviderSwitch();
 
   // 切換視圖
+  appHeader.classList.add("hidden");
   lobbyView.classList.add("hidden");
   gameView.classList.remove("hidden");
-  
+
   currentGameTitle.textContent = `${currentGame.title}`;
   statCount.textContent = "0";
   
@@ -186,13 +207,7 @@ function startNewGame(question) {
   logBody.innerHTML = "";
 
   // 重置對話框
-  chatBox.innerHTML = `
-    <div class="msg-bubble system">
-      <div class="msg-content">
-        AI 主持人已就位。請閱讀上方的湯面，並在下方開始向主持人發問。
-      </div>
-    </div>
-  `;
+  chatBox.innerHTML = "";
 
   // 檢查是否有湯面描述，若無則顯示警示，防範開發者尚未補充
   const riddleTextContent = currentGame.description.trim() || 
@@ -257,6 +272,7 @@ btnBack.addEventListener("click", () => {
       return;
     }
   }
+  appHeader.classList.remove("hidden");
   gameView.classList.add("hidden");
   lobbyView.classList.remove("hidden");
   currentGame = null;
@@ -264,6 +280,7 @@ btnBack.addEventListener("click", () => {
 
 btnEndingLobby.addEventListener("click", () => {
   endingOverlay.classList.add("hidden");
+  appHeader.classList.remove("hidden");
   gameView.classList.add("hidden");
   lobbyView.classList.remove("hidden");
   currentGame = null;
@@ -310,6 +327,7 @@ async function handleHostResponse(userInput, isGuess = false) {
       body: JSON.stringify({
         messages: chatHistory,
         isHintMode: isHintMode,
+        provider: aiProvider,
         game: {
           title: currentGame.title,
           description: currentGame.description,
@@ -334,8 +352,8 @@ async function handleHostResponse(userInput, isGuess = false) {
 
       // 鎖定發問欄位 10 秒防範重複狂點
       setTimeout(() => {
-        setControlsEnabled(true);
         isGenerating = false;
+        setControlsEnabled(true);
         appendSystemMessage("鎖定解除，您可以重新嘗試提問。");
       }, 10000);
       return;
@@ -364,8 +382,8 @@ async function handleHostResponse(userInput, isGuess = false) {
     if (replyText.includes("恭喜你，你解開了這碗海龜湯！")) {
       setTimeout(() => triggerEnding(true), 1500);
     } else {
-      setControlsEnabled(true);
       isGenerating = false;
+      setControlsEnabled(true);
     }
 
   } catch (error) {
@@ -378,8 +396,8 @@ async function handleHostResponse(userInput, isGuess = false) {
     questionCount = Math.max(0, questionCount - 1);
     statCount.textContent = questionCount;
 
-    setControlsEnabled(true);
     isGenerating = false;
+    setControlsEnabled(true);
   }
 }
 
