@@ -61,9 +61,9 @@ function setHintMode(isOn) {
 // ==========================================
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    const qRes = await fetch("questions.json?t=" + Date.now());
+    const qRes = await fetch("/api/questions?t=" + Date.now());
     if (!qRes.ok) {
-      throw new Error("無法讀取題目資料檔 (questions.json)。");
+      throw new Error("無法讀取題目資料。");
     }
 
     const allQuestions = await qRes.json();
@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     cardGrid.innerHTML = `
       <div class="no-results">
         <i class="fa-solid fa-triangle-exclamation" style="font-size: 2.5rem; color: #ef4444; margin-bottom: 1rem;"></i>
-        <p>載入題目資料失敗，請確認 questions.json 檔案存在且格式正確。</p>
+        <p>載入題目資料失敗，請確認伺服器已正常啟動。</p>
         <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--color-text-muted);">${error.message}</p>
       </div>
     `;
@@ -236,10 +236,21 @@ chatForm.addEventListener("submit", async (e) => {
 });
 
 // 放棄觀看真相
-btnReveal.addEventListener("click", () => {
-  if (confirm("您確定要放棄並看真相嗎？這將會結束挑戰並顯示答案。")) {
-    triggerEnding(false);
+btnReveal.addEventListener("click", async () => {
+  if (!confirm("您確定要放棄並看真相嗎？這將會結束挑戰並顯示答案。")) return;
+
+  let solutionText = "（無法取得湯底內容，請稍後再試）";
+  try {
+    const res = await fetch(`/api/questions/${currentGame.id}/solution`);
+    if (res.ok) {
+      const data = await res.json();
+      solutionText = data.solution;
+    }
+  } catch (error) {
+    console.error("取得湯底失敗:", error);
   }
+
+  triggerEnding(false, solutionText);
 });
 
 // 返回大廳
@@ -277,23 +288,6 @@ async function handleHostResponse(userInput) {
   const apiQuery = `提問：${userInput}`;
   chatHistory.push({ role: "user", parts: [{ text: apiQuery }] });
 
-  // 檢查是否包含任一解答關鍵字
-  const hasKeyword = currentGame && currentGame.keys && Array.isArray(currentGame.keys) && currentGame.keys.some(key => {
-    return key && userInput.toLowerCase().includes(key.toLowerCase());
-  });
-
-  if (hasKeyword) {
-    // 模擬打字延遲，然後判定挑戰成功並顯示完整湯底
-    setTimeout(() => {
-      typingIndicator.remove();
-      const replyText = "恭喜你，你的提問中包含了關鍵字！恭喜你，你解開了這碗海龜湯！";
-      chatHistory.push({ role: "model", parts: [{ text: replyText }] });
-      appendHostMessage(replyText);
-      setTimeout(() => triggerEnding(true), 1500);
-    }, 600);
-    return;
-  }
-
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
@@ -303,11 +297,7 @@ async function handleHostResponse(userInput) {
       body: JSON.stringify({
         messages: chatHistory,
         isHintMode: isHintMode,
-        game: {
-          title: currentGame.title,
-          description: currentGame.description,
-          solution: currentGame.solution
-        }
+        questionId: currentGame.id
       })
     });
 
@@ -351,7 +341,7 @@ async function handleHostResponse(userInput) {
 
     // 偵測是否成功破案
     if (replyText.includes("恭喜你，你解開了這碗海龜湯！")) {
-      setTimeout(() => triggerEnding(true), 1500);
+      setTimeout(() => triggerEnding(true, resData.solution), 1500);
     } else {
       isGenerating = false;
       setControlsEnabled(true);
@@ -472,11 +462,11 @@ function escapeHTML(str) {
 // ==========================================
 // 8. 破案與結局面板觸發
 // ==========================================
-function triggerEnding(isWin) {
+function triggerEnding(isWin, solutionText) {
   endingCount.textContent = questionCount;
-  
+
   // 寫入完整答案
-  endingSolutionText.textContent = currentGame.solution;
+  endingSolutionText.textContent = solutionText || "（無法取得湯底內容，請稍後再試）";
 
   if (isWin) {
     endingHeader.className = "ending-header win";

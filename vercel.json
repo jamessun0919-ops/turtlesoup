@@ -12,16 +12,12 @@
       "dest": "server.js"
     },
     {
-      "src": "/questions.json",
-      "dest": "questions.json"
+      "src": "/api/questions/(.*)",
+      "dest": "server.js"
     },
     {
-      "src": "/rules_host.txt",
-      "dest": "rules_host.txt"
-    },
-    {
-      "src": "/rules_hint.txt",
-      "dest": "rules_hint.txt"
+      "src": "/api/questions",
+      "dest": "server.js"
     },
     {
       "src": "/app.js",

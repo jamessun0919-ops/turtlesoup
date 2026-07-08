@@ -1,5 +1,6 @@
 const express = require('express');
 const dotenv = require('dotenv');
+const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
 
@@ -11,12 +12,42 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// 託管根目錄下的靜態前端網頁與資料檔
-app.use(express.static(path.join(__dirname)));
+// 僅開放前端實際需要的靜態檔案，避免題庫解答／規則檔／原始碼等敏感檔案
+// 透過整個目錄靜態託管而被直接下載（例如 GET /questions.json、GET /server.js）
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/index.html', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/style.css', (req, res) => res.sendFile(path.join(__dirname, 'style.css')));
+app.get('/app.js', (req, res) => res.sendFile(path.join(__dirname, 'app.js')));
 
 function isValidKey(key) {
   return !!key && key !== "YOUR_GEMINI_API_KEY_HERE" && key !== "YOUR_OPENAI_API_KEY_HERE" && key.trim() !== "";
 }
+
+// 伺服器端保管的完整題庫（含湯底／關鍵字），不對外直接暴露原始檔案
+const questionBank = (() => {
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(__dirname, 'questions.json'), 'utf8'));
+    return raw.filter(q => q.id);
+  } catch (err) {
+    console.error('[錯誤] 無法讀取 questions.json 題庫檔案:', err.message);
+    return [];
+  }
+})();
+
+// 回傳給前端的公開欄位，移除湯底與關鍵字避免答案外洩
+function toPublicQuestion(q) {
+  const { solution, keys, ...publicFields } = q;
+  return publicFields;
+}
+
+// /api/chat 速率限制：避免有人繞過前端 UI 直接打 API，無限制消耗 Gemini/OpenAI 額度
+const chatLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "RATE_LIMITED", message: "請求過於頻繁，請稍候再試。" }
+});
 
 // 句尾是否帶有明確的是非題標記（嗎/是不是/是否/有沒有/對不對）。
 // 這類句子即使內含「誰」、「什麼」、「哪裡」等疑問詞，結構上仍是合法的是非題，
@@ -143,14 +174,50 @@ async function callOpenAI(apiKey, systemInstruction, messages) {
   return { ok: true, replyText: responseText };
 }
 
-// 遊戲問答代理端點 (POST /api/chat)
-app.post('/api/chat', async (req, res) => {
-  const { messages, isHintMode, game } = req.body;
+// 題庫公開端點：僅回傳大廳/湯面顯示所需欄位，不含湯底與關鍵字 (GET /api/questions)
+app.get('/api/questions', (req, res) => {
+  res.json(questionBank.map(toPublicQuestion));
+});
 
-  if (!messages || !game) {
+// 放棄挑戰時取得完整湯底 (GET /api/questions/:id/solution)
+app.get('/api/questions/:id/solution', (req, res) => {
+  const question = questionBank.find(q => String(q.id) === req.params.id);
+  if (!question) {
+    return res.status(404).json({ error: "NOT_FOUND", message: "找不到指定的題目。" });
+  }
+  res.json({ solution: question.solution });
+});
+
+// 遊戲問答代理端點 (POST /api/chat)
+app.post('/api/chat', chatLimiter, async (req, res) => {
+  const { messages, isHintMode, questionId } = req.body;
+
+  if (!messages || questionId === undefined || questionId === null) {
     return res.status(400).json({
       error: "INVALID_REQUEST",
-      message: "缺少必要參數 (messages, game)"
+      message: "缺少必要參數 (messages, questionId)"
+    });
+  }
+
+  const question = questionBank.find(q => String(q.id) === String(questionId));
+  if (!question) {
+    return res.status(400).json({
+      error: "INVALID_QUESTION",
+      message: "找不到指定的題目。"
+    });
+  }
+
+  const latestQueryText = messages[messages.length - 1]?.parts?.[0]?.text || "";
+
+  // 關鍵字命中即時破案判定。原本在前端進行，但湯底/關鍵字現已不再下發給前端，改於伺服器端統一判定
+  const hasKeyword = Array.isArray(question.keys) && question.keys.some(key => {
+    return key && latestQueryText.toLowerCase().includes(key.toLowerCase());
+  });
+
+  if (hasKeyword) {
+    return res.json({
+      reply: "恭喜你，你的提問中包含了關鍵字！恭喜你，你解開了這碗海龜湯！",
+      solution: question.solution
     });
   }
 
@@ -163,8 +230,7 @@ app.post('/api/chat', async (req, res) => {
     console.log(`[提示] 偵測到 AI API 金鑰尚未配置。系統已啟用「AI 主持人模擬器 (Mock Mode)」以供功能展示與測試。`);
 
     // 本地 Mock 主持人邏輯，用於免金鑰的完整功能示範
-    const queryText = messages[messages.length - 1].parts[0].text;
-    const cleanQuery = queryText.replace("提問：", "").trim();
+    const cleanQuery = latestQueryText.replace("提問：", "").trim();
 
     // 偵測是否為開放式問題 (Mock 模式判定)
     // 句尾若有明確是非題標記（嗎/是不是等），即使內含疑問詞，也不算開放式問題
@@ -183,10 +249,12 @@ app.post('/api/chat', async (req, res) => {
     const isIrr = irrTerms.some(t => cleanQuery.includes(t));
 
     let reply = "";
+    let solution;
     if (isOpenQuestion) {
       reply = "遊戲只能詢問是非題喔";
     } else if (isFullSolve) {
       reply = "恭喜你，你解開了這碗海龜湯！";
+      solution = question.solution;
     } else if (isIrr) {
       reply = isHintMode ? "無關，這對拼湊出故事真相沒有任何幫助。" : "無關";
     } else if (isYes) {
@@ -199,7 +267,7 @@ app.post('/api/chat', async (req, res) => {
 
     // 延遲 500ms 模擬網路通訊
     await new Promise(resolve => setTimeout(resolve, 500));
-    return res.json({ reply });
+    return res.json(solution ? { reply, solution } : { reply });
   }
 
   try {
@@ -218,7 +286,6 @@ app.post('/api/chat', async (req, res) => {
 
     // 句尾若有明確是非題標記，直接由程式碼判定為合法是非題，
     // 不交由 AI 自行判斷是否拒答（已實測證實該判斷會有隨機浮動）
-    const latestQueryText = messages[messages.length - 1]?.parts?.[0]?.text || "";
     const forceValidYesNo = hasYesNoMarker(latestQueryText);
 
     // 組合系統指令 (System Instruction)
@@ -226,9 +293,9 @@ app.post('/api/chat', async (req, res) => {
       ${ruleText}
 
       【當前進行的謎題資訊】
-      題目名稱：${game.title}
-      湯面（謎題故事）：${game.description || "未提供詳細湯面"}
-      湯底（故事真相答案）：${game.solution}
+      題目名稱：${question.title}
+      湯面（謎題故事）：${question.description || "未提供詳細湯面"}
+      湯底（故事真相答案）：${question.solution}
       ${forceValidYesNo ? `
       【系統額外指令】本次玩家提問句尾已包含明確的是非題標記（嗎／是不是／是否／有沒有／對不對），無論句子裡是否出現「誰」、「什麼」、「哪裡」等疑問詞，一律視為合法的是非題，必須依照上方規則以「是」、「否」、「是也不是」、「無關」其中之一回答，絕對不可回覆「遊戲只能詢問是非題喔」。
       ` : ""}
@@ -252,7 +319,8 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
-    return res.json({ reply: result.replyText });
+    const isWinReply = result.replyText.includes("恭喜你，你解開了這碗海龜湯！");
+    return res.json(isWinReply ? { reply: result.replyText, solution: question.solution } : { reply: result.replyText });
 
   } catch (error) {
     console.error("伺服器處理 API 請求時發生錯誤:", error);
