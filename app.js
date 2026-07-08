@@ -166,6 +166,7 @@ function startNewGame(question) {
   appHeader.classList.add("hidden");
   lobbyView.classList.add("hidden");
   gameView.classList.remove("hidden");
+  window.scrollTo(0, 0);
 
   currentGameTitle.textContent = `${currentGame.title}`;
   statCount.textContent = "0";
