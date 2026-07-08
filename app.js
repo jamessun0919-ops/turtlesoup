@@ -39,6 +39,23 @@ const endingCount = document.getElementById("ending-count");
 const endingSolutionText = document.getElementById("ending-solution-text");
 const btnEndingLobby = document.getElementById("btn-ending-lobby");
 
+const hintModeOverlay = document.getElementById("hint-mode-overlay");
+const btnHintModeOn = document.getElementById("btn-hint-mode-on");
+const btnHintModeOff = document.getElementById("btn-hint-mode-off");
+
+// 提示模式偏好記錄於瀏覽器 localStorage，跨遊戲/重新整理皆會維持
+const HINT_MODE_STORAGE_KEY = "turtlesoup_hintMode";
+
+function getSavedHintMode() {
+  return localStorage.getItem(HINT_MODE_STORAGE_KEY); // "on" | "off" | null
+}
+
+function setHintMode(isOn) {
+  isHintMode = isOn;
+  hintToggle.checked = isOn;
+  localStorage.setItem(HINT_MODE_STORAGE_KEY, isOn ? "on" : "off");
+}
+
 // ==========================================
 // 3. 網頁初始化與資料載入
 // ==========================================
@@ -82,11 +99,21 @@ function initLobby() {
     });
   });
 
-  // 提示切換事件
-  hintToggle.checked = false;
-  isHintMode = false;
+  // 提示切換事件：預設關閉，若瀏覽器已記錄過選擇的模式則沿用
+  isHintMode = getSavedHintMode() === "on";
+  hintToggle.checked = isHintMode;
   hintToggle.addEventListener("change", (e) => {
-    isHintMode = e.target.checked;
+    setHintMode(e.target.checked);
+  });
+
+  btnHintModeOn.addEventListener("click", () => {
+    setHintMode(true);
+    hintModeOverlay.classList.add("hidden");
+  });
+
+  btnHintModeOff.addEventListener("click", () => {
+    setHintMode(false);
+    hintModeOverlay.classList.add("hidden");
   });
 }
 
@@ -196,9 +223,14 @@ chatForm.addEventListener("submit", async (e) => {
 
   chatInput.value = "";
   appendUserMessage(query);
-  
+
   questionCount++;
   statCount.textContent = questionCount;
+
+  // 提問滿三題後，若使用者尚未選擇過提示模式，跳出視窗詢問
+  if (questionCount === 3 && getSavedHintMode() === null) {
+    hintModeOverlay.classList.remove("hidden");
+  }
 
   await handleHostResponse(query);
 });
