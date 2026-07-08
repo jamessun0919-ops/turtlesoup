@@ -308,7 +308,7 @@ body {
 /* 2. GAME PLAY VIEW - Top Action Bar */
 .game-top-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
@@ -325,6 +325,35 @@ body {
   color: var(--accent-gold);
   text-shadow: 0 0 10px var(--accent-gold-glow);
   text-align: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hint-toggle-container.top-bar-hint {
+  justify-self: end;
+  margin: 0;
+  gap: 0.4rem;
+}
+
+.top-bar-hint .status-label {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.top-bar-hint .switch {
+  width: 36px;
+  height: 20px;
+}
+
+.top-bar-hint .slider:before {
+  height: 14px;
+  width: 14px;
+}
+
+.top-bar-hint input:checked + .slider:before {
+  transform: translateX(16px);
 }
 
 /* Game Layout Grid */
@@ -368,6 +397,16 @@ body {
   font-weight: 700;
 }
 
+.riddle-stat-count {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.riddle-stat-count .status-value {
+  font-size: 0.95rem;
+}
+
 .riddle-body {
   font-size: 1.05rem;
   line-height: 1.7;
@@ -397,6 +436,13 @@ body {
   flex-direction: column;
   gap: 1rem;
   scroll-behavior: smooth;
+}
+
+/* 每個對話回合（提問＋回覆）作為一個整體置頂，回合內維持提問在上、回覆在下 */
+.chat-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 /* Custom Scrollbar for Chat Box */
@@ -485,7 +531,7 @@ body {
   gap: 0.75rem;
   padding: 1rem;
   background-color: rgba(10, 10, 15, 0.4);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 #chat-input {
@@ -563,12 +609,6 @@ body {
   gap: 0.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding-bottom: 0.5rem;
-}
-
-.panel-desc {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  margin-bottom: 0.75rem;
 }
 
 .status-item {
@@ -656,77 +696,6 @@ input:checked + .slider:before {
 
 .slider.round:before {
   border-radius: 50%;
-}
-
-.hint-mode-desc {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  line-height: 1.4;
-}
-
-.ai-toggle-container {
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.ai-switch-group {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.ai-btn {
-  background-color: var(--bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  color: var(--color-text-muted);
-  padding: 0.35rem 0.9rem;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: var(--transition-smooth);
-}
-
-.ai-btn:hover:not(:disabled) {
-  border-color: var(--accent-gold);
-  color: var(--color-text-primary);
-}
-
-.ai-btn.active {
-  background-color: var(--accent-gold);
-  color: var(--bg-primary);
-  font-weight: 700;
-  border-color: var(--accent-gold);
-  box-shadow: 0 0 12px var(--accent-gold-glow);
-}
-
-.ai-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-/* Guess Area Form Controls */
-.guess-panel textarea {
-  width: 100%;
-  height: 100px;
-  padding: 0.75rem;
-  background-color: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: var(--color-text-primary);
-  font-size: 0.9rem;
-  outline: none;
-  resize: none;
-  transition: var(--transition-smooth);
-  margin-bottom: 0.75rem;
-}
-
-.guess-panel textarea:focus:not(:disabled) {
-  border-color: var(--accent-gold);
-  box-shadow: 0 0 8px rgba(229, 192, 96, 0.1);
-}
-
-.guess-panel textarea:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* General Button Styles */
@@ -939,94 +908,6 @@ input:checked + .slider:before {
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
-}
-
-/* Deduction Log Table Styles */
-.log-table-wrapper {
-  max-height: 180px;
-  overflow-y: auto;
-  margin-top: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.2);
-}
-
-.log-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8rem;
-}
-
-.log-table th, .log-table td {
-  padding: 0.5rem 0.4rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.log-table th {
-  background-color: rgba(0, 0, 0, 0.4);
-  color: var(--accent-gold);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.log-table td {
-  color: var(--color-text-primary);
-  vertical-align: middle;
-}
-
-.log-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.log-table tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.02);
-}
-
-/* Verdict Badges */
-.verdict-badge {
-  display: inline-block;
-  padding: 0.15rem 0.4rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-align: center;
-  width: 100%;
-  max-width: 60px;
-}
-
-.verdict-yes {
-  background-color: rgba(229, 192, 96, 0.15);
-  color: var(--accent-gold);
-  border: 1px solid rgba(229, 192, 96, 0.3);
-}
-
-.verdict-no {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: var(--color-text-muted);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.verdict-maybe {
-  background-color: rgba(249, 115, 22, 0.15);
-  color: #fb923c;
-  border: 1px solid rgba(249, 115, 22, 0.3);
-}
-
-.verdict-irrelevant {
-  background-color: rgba(156, 163, 175, 0.08);
-  color: #6b7280;
-  border: 1px solid rgba(156, 163, 175, 0.15);
-}
-
-.verdict-invalid {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  max-width: 75px;
 }
 
 /* Red Error System message badge */

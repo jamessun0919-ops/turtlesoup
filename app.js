@@ -9,8 +9,7 @@ let chatHistory = [];
 let questionCount = 0;
 let isHintMode = false;
 let isGenerating = false;
-let aiProvider = "gemini";
-let aiProviderLocked = false;
+let currentTurnContainer = null;
 
 // ==========================================
 // 2. DOM 元素選取
@@ -20,7 +19,6 @@ const lobbyView = document.getElementById("lobby-view");
 const gameView = document.getElementById("game-view");
 const cardGrid = document.getElementById("card-grid");
 const filterBtns = document.querySelectorAll(".filter-btn");
-const aiProviderBtns = document.querySelectorAll(".ai-btn");
 
 const btnBack = document.getElementById("btn-back");
 const currentGameTitle = document.getElementById("current-game-title");
@@ -32,10 +30,7 @@ const btnSend = document.getElementById("btn-send");
 
 const statCount = document.getElementById("stat-count");
 const hintToggle = document.getElementById("hint-toggle");
-const guessInput = document.getElementById("guess-input");
-const btnGuess = document.getElementById("btn-guess");
 const btnReveal = document.getElementById("btn-reveal");
-const logBody = document.getElementById("log-body");
 
 const endingOverlay = document.getElementById("ending-overlay");
 const endingHeader = document.getElementById("ending-header");
@@ -159,33 +154,6 @@ function getCategoryClass(cat) {
 }
 
 // ==========================================
-// 4.5 主持人 AI 切換（Gemini／GPT）
-// ==========================================
-aiProviderBtns.forEach(btn => {
-  btn.addEventListener("click", () => {
-    if (aiProviderLocked) return;
-
-    aiProviderBtns.forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    aiProvider = btn.getAttribute("data-provider");
-
-    aiProviderLocked = true;
-    aiProviderBtns.forEach(b => b.disabled = true);
-
-    appendSystemMessage(`已鎖定主持人 AI：${aiProvider === "gpt" ? "GPT" : "Gemini"}（本場遊戲無法再切換）`);
-  });
-});
-
-function resetAIProviderSwitch() {
-  aiProvider = "gemini";
-  aiProviderLocked = false;
-  aiProviderBtns.forEach(b => {
-    b.disabled = false;
-    b.classList.toggle("active", b.getAttribute("data-provider") === "gemini");
-  });
-}
-
-// ==========================================
 // 5. 遊戲流程與狀態控制
 // ==========================================
 function startNewGame(question) {
@@ -193,7 +161,6 @@ function startNewGame(question) {
   questionCount = 0;
   chatHistory = [];
   isGenerating = false;
-  resetAIProviderSwitch();
 
   // 切換視圖
   appHeader.classList.add("hidden");
@@ -202,12 +169,10 @@ function startNewGame(question) {
 
   currentGameTitle.textContent = `${currentGame.title}`;
   statCount.textContent = "0";
-  
-  // 清空推理筆記表格
-  logBody.innerHTML = "";
 
   // 重置對話框
   chatBox.innerHTML = "";
+  currentTurnContainer = null;
 
   // 檢查是否有湯面描述，若無則顯示警示，防範開發者尚未補充
   const riddleTextContent = currentGame.description.trim() || 
@@ -218,8 +183,6 @@ function startNewGame(question) {
   typeWriter(riddleTextContent, "riddle-text", 20, () => {
     setControlsEnabled(true);
   });
-  
-  guessInput.value = "";
 }
 
 // 提問發送
@@ -236,26 +199,7 @@ chatForm.addEventListener("submit", async (e) => {
   questionCount++;
   statCount.textContent = questionCount;
 
-  await handleHostResponse(query, false);
-});
-
-// 提交推論猜測
-btnGuess.addEventListener("click", async () => {
-  if (isGenerating) return;
-
-  const guess = guessInput.value.trim();
-  if (!guess) {
-    alert("請先輸入您的推論猜測內容！");
-    return;
-  }
-
-  appendUserMessage(`【提交推論猜測】\n${guess}`);
-  guessInput.value = "";
-  
-  questionCount++;
-  statCount.textContent = questionCount;
-
-  await handleHostResponse(guess, true);
+  await handleHostResponse(query);
 });
 
 // 放棄觀看真相
@@ -289,7 +233,7 @@ btnEndingLobby.addEventListener("click", () => {
 // ==========================================
 // 6. 伺服器通訊與主持人答覆
 // ==========================================
-async function handleHostResponse(userInput, isGuess = false) {
+async function handleHostResponse(userInput) {
   isGenerating = true;
   setControlsEnabled(false);
 
@@ -297,7 +241,7 @@ async function handleHostResponse(userInput, isGuess = false) {
   const typingIndicator = showTypingIndicator();
 
   // 包裝傳送給後端的歷史對話
-  const apiQuery = isGuess ? `推論：${userInput}` : `提問：${userInput}`;
+  const apiQuery = `提問：${userInput}`;
   chatHistory.push({ role: "user", parts: [{ text: apiQuery }] });
 
   // 檢查是否包含任一解答關鍵字
@@ -312,7 +256,6 @@ async function handleHostResponse(userInput, isGuess = false) {
       const replyText = "恭喜你，你的提問中包含了關鍵字！恭喜你，你解開了這碗海龜湯！";
       chatHistory.push({ role: "model", parts: [{ text: replyText }] });
       appendHostMessage(replyText);
-      appendToDeductionLog(questionCount, userInput, "是");
       setTimeout(() => triggerEnding(true), 1500);
     }, 600);
     return;
@@ -327,7 +270,6 @@ async function handleHostResponse(userInput, isGuess = false) {
       body: JSON.stringify({
         messages: chatHistory,
         isHintMode: isHintMode,
-        provider: aiProvider,
         game: {
           title: currentGame.title,
           description: currentGame.description,
@@ -374,10 +316,6 @@ async function handleHostResponse(userInput, isGuess = false) {
     // 在畫面上呈現 AI 的回答
     appendHostMessage(replyText);
 
-    // 解析判定結果並記錄到「推理筆記」表格 (排除提示內容)
-    const coreVerdict = parseCoreVerdict(replyText);
-    appendToDeductionLog(questionCount, userInput, coreVerdict);
-
     // 偵測是否成功破案
     if (replyText.includes("恭喜你，你解開了這碗海龜湯！")) {
       setTimeout(() => triggerEnding(true), 1500);
@@ -401,32 +339,12 @@ async function handleHostResponse(userInput, isGuess = false) {
   }
 }
 
-// 解析 AI 回覆的核心判定結果 (是/否/是也不是/無關/是非題)
-function parseCoreVerdict(reply) {
-  if (reply.includes("遊戲只能詢問是非題喔")) return "是非題";
-  
-  // 先比對較長詞彙，防止 substring 誤判
-  if (reply.includes("是也不是")) return "是也不是";
-  if (reply.includes("無關")) return "無關";
-  
-  // 檢測是否包含破案關鍵句
-  if (reply.includes("恭喜你，你解開了這碗海龜湯！")) return "是";
-
-  // 單獨字元比對
-  if (reply.includes("是")) return "是";
-  if (reply.includes("否") || reply.includes("不對") || reply.includes("錯誤")) return "否";
-  
-  return "否"; // 預設值
-}
-
 // ==========================================
 // 7. UI 輔助與動態渲染函式
 // ==========================================
 function setControlsEnabled(enabled) {
   chatInput.disabled = !enabled;
   btnSend.disabled = !enabled;
-  guessInput.disabled = !enabled;
-  btnGuess.disabled = !enabled;
   btnReveal.disabled = !enabled;
   btnBack.disabled = isGenerating; // 系統忙碌中，不允許點擊返回按鈕防止狀態衝突
   
@@ -452,36 +370,41 @@ function typeWriter(text, elementId, speed = 25, callback = null) {
   type();
 }
 
+// 每次提問建立一個新的「對話回合」容器，並置頂顯示，回合內則維持提問在上、回覆在下的順序
 function appendUserMessage(text) {
+  currentTurnContainer = document.createElement("div");
+  currentTurnContainer.className = "chat-turn";
+  chatBox.prepend(currentTurnContainer);
+
   const bubble = document.createElement("div");
   bubble.className = "msg-bubble user";
   bubble.innerHTML = `<div class="msg-content">${escapeHTML(text)}</div>`;
-  chatBox.appendChild(bubble);
-  scrollToBottom();
+  currentTurnContainer.appendChild(bubble);
+  scrollToTop();
 }
 
 function appendHostMessage(text) {
   const bubble = document.createElement("div");
   bubble.className = "msg-bubble ai";
   bubble.innerHTML = `<div class="msg-content">${escapeHTML(text)}</div>`;
-  chatBox.appendChild(bubble);
-  scrollToBottom();
+  (currentTurnContainer || chatBox).appendChild(bubble);
+  scrollToTop();
 }
 
 function appendSystemMessage(text) {
   const bubble = document.createElement("div");
   bubble.className = "msg-bubble system";
   bubble.innerHTML = `<div class="msg-content">${escapeHTML(text)}</div>`;
-  chatBox.appendChild(bubble);
-  scrollToBottom();
+  (currentTurnContainer || chatBox).appendChild(bubble);
+  scrollToTop();
 }
 
 function appendSystemErrorMessage(text) {
   const bubble = document.createElement("div");
   bubble.className = "msg-bubble system-error";
   bubble.innerHTML = `<div class="msg-content">${escapeHTML(text)}</div>`;
-  chatBox.appendChild(bubble);
-  scrollToBottom();
+  (currentTurnContainer || chatBox).appendChild(bubble);
+  scrollToTop();
 }
 
 function showTypingIndicator() {
@@ -494,41 +417,13 @@ function showTypingIndicator() {
       <div class="thinking-dot"></div>
     </div>
   `;
-  chatBox.appendChild(indicator);
-  scrollToBottom();
+  (currentTurnContainer || chatBox).appendChild(indicator);
+  scrollToTop();
   return indicator;
 }
 
-// 動態寫入推理筆記表格
-function appendToDeductionLog(num, query, verdict) {
-  const tr = document.createElement("tr");
-  
-  // 截取問題前 10 個字，超過補 ...
-  const summary = query.length > 10 ? query.substring(0, 10) + "..." : query;
-  
-  let badgeClass = "verdict-no";
-  if (verdict === "是") badgeClass = "verdict-yes";
-  else if (verdict === "是也不是") badgeClass = "verdict-maybe";
-  else if (verdict === "無關") badgeClass = "verdict-irrelevant";
-  else if (verdict === "是非題") badgeClass = "verdict-invalid";
-  
-  tr.innerHTML = `
-    <td style="text-align: center; color: var(--color-text-muted);">${num}</td>
-    <td>${escapeHTML(summary)}</td>
-    <td style="text-align: center;"><span class="verdict-badge ${badgeClass}">${verdict}</span></td>
-  `;
-  
-  logBody.appendChild(tr);
-  
-  // 自動將表格滾動到底部
-  const wrapper = logBody.closest(".log-table-wrapper");
-  if (wrapper) {
-    wrapper.scrollTop = wrapper.scrollHeight;
-  }
-}
-
-function scrollToBottom() {
-  chatBox.scrollTop = chatBox.scrollHeight;
+function scrollToTop() {
+  chatBox.scrollTop = 0;
 }
 
 function escapeHTML(str) {

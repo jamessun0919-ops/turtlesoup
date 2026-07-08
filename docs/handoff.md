@@ -3,54 +3,47 @@
 > 精簡且高度機器可讀，供下次啟動時直接貼上作為 Prompt。此文件會被覆寫為最新狀態（非累積式日誌）。
 
 ## 專案目標 (Project Goal)
-海龜湯（側向思考推理）單頁遊戲網頁，由 Node.js Proxy 伺服器代理 Gemini API 作為 AI 主持人。
+海龜湯（側向思考推理）單頁遊戲網頁，由 Node.js Proxy 伺服器代理 AI（Gemini 為主、OpenAI GPT 為自動備援）作為主持人。
 
 ## 已完成進度 (Completed)
-- questions.json 全部 23 題的 description/solution/keys 已補齊（無空白湯面/湯底）。
-- app.js 已實作 keys 關鍵字比對機制：使用者提問命中任一題目 keys 即判定為接近解答 (app.js:287-291)。
-- 清理重複的 rule.txt（內容重複於全域 CLAUDE.md）與原始 .ods 題庫來源檔（已被 questions.json 取代）。
-- 專案根目錄的本機 CLAUDE.md 副本已加入 .gitignore（本專案無其他協作者，不需入庫）。
-- 建立 docs/worklog.md、docs/chatlog.md、docs/handoff.md 三份文件框架。
-- 桌面版排版改為置中窄版（手機模擬顯示）：#app-container max-width 1200px→480px (style.css:64)；移除 .lobby-controls 於 768px 與 .game-layout 於 992px 的雙欄/橫排 media query override，使桌面與行動裝置外觀一致。已用 Playwright 於 1440x900 視窗截圖驗證。
-- Logo 素材測試順序：先試 `Fried Shrimp.png`（玩偶實拍照），後改用使用者提供的 `logo.jpg`（扁平插畫風格，同一角色）。兩個原始檔都保留未動，去背後統一輸出成 `shrimp-logo.png` 套用於 index.html:28。
-  - 實拍照（絨毛紋理、有雜訊反光）：需要「局部模糊去噪去除反光雜點」+「模糊邊緣 alpha」處理。
-  - 向量插畫（logo.jpg，邊緣本身就乾脆俐落）：改成「不做額外模糊、直接依亮度門檻取 alpha」，否則模糊會在描邊外側留下一圈灰白色的殘影（因為模糊後某些像素的 alpha 是「合成」出來的部分透明值，但該像素原始顏色其實是純白或純咖啡色其中一種，去污染公式會算出錯誤顏色）。
-  - 兩者都採用「顏色去污染 (color decontamination)」+ 輸出透明背景 PNG（非填實色），因 header 坐落在 radial-gradient 而非純色背景。
-  - 去背腳本為一次性素材處理，未存成專案內固定 script。
-- **著作權提醒**：`Fried Shrimp.png`（玩偶實拍照）與 `logo.jpg`（插畫）都是 San-X 官方角落小夥伴角色的衍生素材，屬受著作權保護。本機測試/開發沒有問題，但此專案有 Render 公開 Demo 連結，**正式部署前需使用者自行確認是否有適當使用權利**，agent 僅依指示套用使用者提供的圖檔，未做授權查核。
-- 大廳版面：移除搜尋欄位（index.html 原 `.search-box`），同步清掉 app.js 的 `searchInput` 變數與 `filterLobby()` 裡的關鍵字比對邏輯（僅留分類篩選），並移除 style.css 對應的 `.search-box`/`.search-icon`/`#search-input` 規則。已用 Playwright 點擊分類按鈕確認無 JS 錯誤、篩選正常。
-- 標題下方文字從英文標語改為三行中文遊戲規則說明（海龜湯定義／提問規則／回答限制），對應調整 .subtitle 樣式（改用 sans 字體、拿掉大寫字距，改為適合多行內文的 line-height）。
-- 進入遊戲問答畫面後隱藏頂部 header（logo/標題/規則說明）：header 加上 id="app-header"，在 `startNewGame()` 加 hidden、在返回大廳／結束回大廳時移除 hidden (app.js)。
-- 遊戲畫面題目標題置中：`.game-top-bar` 改為三欄 grid (`minmax(0,1fr) auto minmax(0,1fr)`)，返回按鈕 `justify-self:start`，標題落在中間欄自然置中 (style.css)。
-- **新增「切換主持人 AI」功能（Gemini／GPT）**：
-  - 前端：遊戲狀態面板新增 Gemini/GPT 兩個按鈕 (index.html)，`aiProvider`/`aiProviderLocked` 全域狀態，點擊任一按鈕即鎖定兩顆按鈕（一場遊戲僅能選一次），`startNewGame()` 時重置回 Gemini/解鎖 (app.js)。選擇的 provider 會隨每次 `/api/chat` 請求送出。
-  - 後端：`server.js` 依 `req.body.provider` 分流；GPT 分支呼叫 OpenAI Chat Completions API (`gpt-4o-mini`，可用 `OPENAI_MODEL` 環境變數覆寫)，把 Gemini 格式的訊息 (`role/parts`) 轉換成 OpenAI 格式 (`role/content`，`model`→`assistant`)。兩種 provider 各自依其金鑰是否存在判斷 Mock Mode。
-  - 已用 Playwright 對兩個 provider 各送出一次真實 API 呼叫測試（`.env` 中的 GEMINI_API_KEY 與 OPENAI_API_KEY 都是有效金鑰，非 mock），皆正常收到「是」的回覆，伺服器 log 無錯誤。**注意：這會消耗兩邊的真實 API 額度/費用**，之後若要重複測試請注意。
-- **修復既有 Bug**：`setControlsEnabled()` (app.js) 原本在成功取得 AI 回覆的三處分支都寫成先 `setControlsEnabled(true)` 再 `isGenerating = false`，但函式內部是用**呼叫當下**的 `isGenerating` 值設定 `btnBack.disabled`，導致每場遊戲問完第一個問題後「返回大廳」按鈕永久卡在 disabled。已將三處都改成先 `isGenerating = false` 再呼叫 `setControlsEnabled(true)`（app.js 約 362-363、392-393、406-407 行一帶）。已用 Playwright 驗證：問完問題後 btnBack 不再是 disabled，點擊後能正常返回大廳。
-- 取消進入遊戲時聊天室自動出現的系統提示泡泡「AI 主持人已就位。請閱讀上方的湯面...」，`startNewGame()` 改成 `chatBox.innerHTML = ""`（app.js）。對應說明文字改放到 `#chat-input` 的 placeholder：「AI 主持人已就位，請開始發問。」(index.html)。
-- 大廳版面鎖定 header／規則說明／分類篩選列，只有題目卡片區塊可滾動：`.app-header` 與 `.lobby-controls` 都改成 `position:sticky`（分別 `top:0` 與 `top:212px`，212px＝目前 header 實際渲染高度，是量測得出的數值，非公式計算；若之後改動 header 內容高度，這個數字需要重新量測調整），背景補 `var(--bg-primary)` 避免卡片滾動時透出。已用 Playwright 捲動整頁到底部驗證 header/篩選列全程固定。
-- 題目卡片改為固定 2 行、移除原本 `height:200px` 固定高度：第一行 ID+分類標籤 (`.q-card-top`)，第二行 title+開始推理按鈕同排 (`.q-card-bottom`，`justify-content:space-between`)，標題過長會用 ellipsis 截斷 (app.js renderCards + style.css)。
-- questions.json 新增「盲點」分類標籤支援：這個值其實原本就已經零散用在多筆題目的 category1/category2 裡（id 1,3,4,5,7,14,15,21,23），但大廳篩選列跟 `getCategoryClass()` 都沒有對應，等於是個「有資料但用不到」的標籤。已補上：大廳篩選按鈕新增「盲點」(index.html)、`getCategoryClass()` 新增對應 (app.js)、卡片標籤新增綠色 `.tag.blindspot` 樣式 (style.css)、questions.json 的 schema note 補上 category1/category2/highlight 欄位說明。已用 Playwright 點擊「盲點」篩選鈕驗證，篩出的 9 筆與資料吻合。
-
-## 已解決事項
-- `Fried Shrimp.png` 消失一事已由使用者確認為手動刪除（不再需要，維持用 `logo.jpg` 產生 `shrimp-logo.png` 的處理方式）。`testlog.txt`（空檔案）使用者要求保留備用，不刪除、也不納入 git 版控。
+- questions.json 全部題目的 description/solution/keys 已補齊；keys 關鍵字比對機制已用自動化測試驗證（前端純本地判定，不耗 API 額度）。
+- 桌面/手機統一置中窄版排版；大廳 header/篩選列 sticky 鎖定；卡片精簡為 2 行；新增「盲點」分類標籤。
+- Logo 素材（`shrimp-logo.png`，去背處理自使用者提供的 `logo.jpg`）。**著作權提醒**：素材為 San-X 角色衍生，公開部署前需使用者自行確認授權，agent 未做授權查核。
+- 遊戲畫面版面優化（2026-07-08）：
+  - 問題輸入框移到對話框最上方；提示模式開關移到標題列右側（`.game-top-bar` 改為固定寬度兩側＋中間標題自動截斷，解決窄螢幕 360px 下的文字重疊）。
+  - 已提問次數從側邊欄移到湯面卡片標題列右側。
+  - 對話顯示改為「最新回合置頂」：每次提問建立獨立 `.chat-turn` 容器並 prepend 到最上方，回合內仍維持提問在上、回覆在下。
+- 遊戲機制大幅簡化（2026-07-08）：
+  - 移除「遊戲狀態（含切換主持人）」「推理筆記」「猜測真相」三個面板，僅保留「放棄並觀看完整湯底」。
+  - 主持人 AI 改為單向備援架構：`OPENAI_API_KEY` 僅在 Gemini 無法使用時自動接手，前端不再提供手動切換 UI；`server.js` 重構為 `callGemini()` / `callOpenAI()`。
+  - 統一破關判定：取消「猜測」與「提問」的輸入區分，AI 依提問內容是否完整涵蓋湯底核心要素直接判定破案。
+- 新增 `docs/training.txt`：獨立於 chatlog 的「AI 主持人規則訓練紀錄」，記錄兩類規則調整的完整討論過程與真實 API 測試結果：
+  - 議題 A「認知落差判定」：已收斂為「湯底有明確時代/物種落差 + 提問為主觀感受性質」雙重限制，已驗證有效。
+  - 議題 B「開放式問題誤判」（代換測試法）：已加入規則，**部分有效、尚未完全解決**（見下方瓶頸）。
+- 伺服器端新增 `hasYesNoMarker()` 決定性判斷（句尾有「嗎/是不是/是否/有沒有/對不對」即不視為開放式問題），並將 Gemini/OpenAI 呼叫的 `temperature` 由 0.2 降為 0。
 
 ## 目前的瓶頸或停頓點 (Current Blocker/Status)
-- 今日變更已推送至 GitHub（見下方「GitHub 倉庫」）。
-- 尚未驗證 keys 關鍵字判定機制的實際遊玩效果。
-- 尚未在真實手機瀏覽器（非模擬）上驗證排版與 logo。
+- **Gemini 免費額度已在今日測試中打完**（`gemini-3.5-flash`／`gemini-2.5-flash`，各限 20 次），期間請求會自動降級由備援 OpenAI 回應。額度通常以日為單位重置。
+- 議題 B（開放式問題誤判）修正**尚未完全解決**：
+  - `temperature=0` 已確認能解決「同一句話重複問答案不一致」的問題。
+  - 但動態附加的覆寫指令對 **GPT-4o-mini 目前無效**，模型仍優先遵循「特別限制」段落的拒答範例；這個修正對 **Gemini 是否有效尚未驗證**（因額度用盡，測試全數落到 OpenAI 備援）。
+- 排版/logo 尚未在真實手機瀏覽器（非模擬視窗）上實測。
 
 ## 下一步行動 (Next Steps)
-1. 實際遊玩驗證 keys 關鍵字判定是否符合預期（含 mock mode 與有金鑰模式）。
-2. 確認排版與 logo 變更在真實手機瀏覽器上也正常。
-3. 更新 GitHub README（Demo／專案目標／計畫架構／已完成進度／未完成事項），已於本次推送一併更新，後續變更需持續維護。
+1. 等 Gemini 免費額度重置後，用同一組測試句（`docs/training.txt` 議題 B 最後一節）重新驗證這次的修正對 Gemini 是否有效。
+2. 若對 GPT-4o-mini 仍無效，考慮：(a) 把覆寫指令挪到 systemInstruction 最前面而非最後面、(b) 改用結構化輸出（JSON mode/function calling）強迫模型先輸出明確分類欄位，而非讓「是否拒答」隱藏在自由文字回覆的決策裡。
+3. 持續累積實際遊玩中出現的不標準提問語料，作為後續規則調整依據（開發者已指出：玩家提問語意混亂性本來就高，非靠一次性規則補完就能涵蓋，需要資料累積）。
+4. 確認排版變更在真實手機瀏覽器上也正常。
 
 ## 關鍵設定與上下文 (Key Context & Rules)
 - **GitHub 倉庫**：https://github.com/jamessun0919-ops/turtlesoup（main 分支）。此資料夾往後的專案工作皆推送至此處，除非另有指示。
-- 伺服器預設 port 為 3000（server.js:10，可用 PORT 環境變數覆寫）；本次測試以 `PORT=8000 node server.js` 於背景執行中。
-- 無對應金鑰（GEMINI_API_KEY／OPENAI_API_KEY）時該 provider 自動啟用 Mock Mode。
-- questions.json 第 0 筆為 schema 說明用的 note，非實際題目。
+- 伺服器預設 port 為 3000（server.js，可用 PORT 環境變數覆寫）。
+- 無對應金鑰（GEMINI_API_KEY／OPENAI_API_KEY）時系統自動啟用 Mock Mode（兩把金鑰都沒有才會啟用；只要有其中一把就會走真實 API + 備援邏輯）。
+- **真實 API 測試務必節制**：Gemini 免費額度每模型僅 20 次/期，過去幾次規則調整討論已多次打完額度；OpenAI 為備援，也會實際扣費。之後每次要用真實 API 驗證規則前，先評估是否有更省成本的驗證方式（例如純前端關鍵字比對不需要呼叫後端）。
+- questions.json 第 0 筆為 schema 說明用的 note，非實際題目；題目標題可能被開發者直接於 IDE 編輯（例如 id 1 已從「新高跟鞋」改名為「致命新鞋」），若程式或測試腳本硬編標題字串，需以當下 questions.json 內容為準，不要假設舊標題仍然存在。
+- 規則檔案（`rules_host.txt`／`rules_hint.txt`）目前段落順序：核心回答規範／特別限制（拒答範例）→ 是非題判斷方法（代換測試法）→ 認知落差判定 → 破案判定 → 資訊邊界原則。兩份檔案需保持同步修改。
+- `docs/training.txt` 是獨立於 `docs/chatlog.md` 的規則訓練紀錄，之後每次「主持人規則補充/調整」類型的討論都應記錄於此，並用分隔線＋「# 議題 X」標明是否為新議題或既有議題的延伸。
 - 中英文版本若存在，修改須同步執行；網頁配色需注意底色與文字對比度。
 - 若未來要用官方角落小夥伴素材，需使用者自行提供已取得授權的圖檔，agent 不會自行產生/下載該角色的官方外觀重製圖。
-- OpenAI 呼叫的 model 名稱寫死預設 `gpt-4o-mini`，可用 `.env` 的 `OPENAI_MODEL` 覆寫，未來若該模型下架需更新。
-- `testlog.txt` 為使用者保留的備用空檔案，不納入 git 版控（.gitignore 或不 add）。
+- OpenAI 呼叫的 model 名稱寫死預設 `gpt-4o-mini`，可用 `.env` 的 `OPENAI_MODEL` 覆寫。
+- `testlog.txt` 為使用者保留的備用空檔案，不納入 git 版控。
