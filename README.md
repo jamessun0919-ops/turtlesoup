@@ -1,23 +1,28 @@
 # 🐢 海龜湯 AI 推理館 (AI Hosted Turtle Soup Game)
 
-[![Node.js CI](https://github.com/jamessun0919-ops/turtlesoup/actions/workflows/node-ci.yml/badge.svg)](https://github.com/jamessun0919-ops/turtlesoup/actions/workflows/node-ci.yml)
+　　海龜湯，遊戲正式名稱為情境猜謎（Situation puzzle）或水平思考遊戲（Lateral thinking puzzle）。出題者會講述一段不尋常的事件（湯面），玩家透過是非題提問，拼湊出背後的故事真相（湯底）。
 
-本專案是一個懸疑暗黑氛圍的 **海龜湯（側向思考推理）單頁遊戲網頁 (SPA)**，搭載由後端 Node.js Proxy 伺服器代理與金鑰保護的 AI 主持人，以 **Google Gemini** 為主要引擎、**OpenAI GPT** 作為自動備援，確保主持人服務穩定不中斷。
+　　海龜湯遊戲本質是一個互動式的遊戲，高度類似使用者與聊天式AI的互動。但開發者對此主題進行調研時發現：
+
+　　與各主流LLM進行海龜湯遊戲時，實際遊玩的體驗與真人主持人相比有很大的落差。LLM生成的題目情境來自於想像，使得這些謎題情境包含大量的AI幻覺(Hallucination)，AI產生了看似合理、語法正確，但實際上沒有根據或完全虛構的內容。
+
+　　導致玩家的認知與AI生成的正確答案不符，無論AI如何進行提示，玩家都無法命中正確答案。玩家在放棄後看到的正確答案也無法產生認同，完全喪失了遊戲裡「原來是這樣，題目很合理只是我沒想到」，缺少恍然大悟的遊戲體驗。
+
+　　為了改善幻覺問題，開發者採用RAG（Retrieval-Augmented Generation）的方式，改為建立題庫後，使用API來讓LLM擔任主持人與玩家問答。使AI主持人在回答問題時是在明確的範圍內思考，而非天馬行空的生成。
+
+　　並且在開發的測試過程中，完善AI主持人對玩家提問的回答規則、提示模式的提示規則，以及當使用者提問的問題不符合遊戲規定（超出是非題的開放式問句）的判斷機制。使AI主持人能提供適當的引導，減少玩家的挫折感。卻又不至於在提示中幾乎講出答案（LLM常會出現的情況），確保玩家擁有良好的使用體驗。
 
 ---
 
-## 🚀 體驗通道 (Demo Access)
+## 🚀 LIVE Demo
 
-| 🌐 線上即時體驗 (Render Live) | 💻 本機開發遊玩 | ⚡ 一鍵雲端複製 (Vercel) |
-| :---: | :---: | :---: |
-| [![Live Demo](https://img.shields.io/badge/Live_Demo-Render-00c0a5?style=for-the-badge&logo=render)](https://turtlesoup-o7au.onrender.com) | [![Local Play](https://img.shields.io/badge/Local_Play-http%3A%2F%2Flocalhost%3A3000-D4AF37?style=for-the-badge&logo=localhost)](http://localhost:3000) | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fjamessun0919-ops%2Fturtlesoup&env=GEMINI_API_KEY&project-name=turtlesoup-ai) |
-| *直接點擊開啟線上版遊玩* | *本機啟動 Node 伺服器後遊玩* | *一鍵複製部署至您個人的平台* |
+| [![Live Demo](https://img.shields.io/badge/Live_Demo-Render-00c0a5?style=for-the-badge&logo=render)](https://turtlesoup-o7au.onrender.com) | 
 
 ---
 
 ## 🎯 專案目標 (Project Goal)
 
-打造一個免安裝、行動裝置優先（手機模擬窄版排版）的海龜湯推理遊戲網頁，由 AI 擔任嚴謹的「是／否／是也不是／無關」主持人，主引擎 Gemini 無法使用時自動降級改用備援 OpenAI GPT，確保玩家體驗一致且不中斷。
+打造一個免安裝、行動裝置優先的海龜湯推理遊戲網頁，由 AI 擔任嚴謹的「是／否／是也不是／無關」主持人，並提供雙AI引擎 Gemini／GPT切換，確保玩家體驗一致且不中斷。
 
 ---
 
@@ -54,25 +59,3 @@
 - Logo 使用的角色素材（角落小夥伴炸蝦尾）屬 San-X 官方著作權素材，正式對外經營前需自行確認使用授權。
 
 ---
-
-## 🛠️ 本地開發與啟動指南 (Local Setup)
-
-### 1. 安裝套件依賴
-在專案根目錄中執行：
-```bash
-npm install
-```
-
-### 2. 配置 API 金鑰
-在專案根目錄中建立或編輯 `.env` 檔案，填入您的金鑰：
-```env
-GEMINI_API_KEY=您的_GEMINI_API_KEY
-OPENAI_API_KEY=您的_OPENAI_API_KEY
-```
-兩把金鑰皆為選填；只要設定其中一把即可正常運作（Gemini 為主、OpenAI 為備援），兩把都未設定時會自動以 Mock Mode 運作。
-
-### 3. 啟動伺服器
-```bash
-npm start
-```
-伺服器啟動後，請開啟瀏覽器訪問 [http://localhost:3000](http://localhost:3000) 即可開始遊玩！
