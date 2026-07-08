@@ -27,14 +27,12 @@
 - 議題 B（開放式問題誤判）修正**尚未完全解決**：`temperature=0` 已解決「同句話重複問答案不一致」，但動態覆寫指令對 **GPT-4o-mini 目前無效**；對 Gemini 是否有效**尚未驗證**（先前測試時 Gemini 免費額度已用盡，全數落到 OpenAI 備援）。
 - **正式環境（Render／Vercel）尚未確認已用最新 commit `54734bb` 重新部署並實測**：這次 `/api/chat` 的請求格式從 `{game: {...}}` 改成 `{questionId: ...}` 是破壞性變更，若正式環境還在跑舊版前端快取，會因缺少 `questionId` 被後端擋掉（400）。部署完成後務必實際玩一輪確認。
 - `vercel.json` 的路由改動（新增 `/api/questions` 路由、移除 `questions.json`/`rules_*.txt` 路由）**未在真實 Vercel 環境測試過**，只確認過本機 Express 伺服器行為；若專案仍在用 Vercel 部署，建議部署後額外驗證。
-- README「未完成事項」仍列著兩則已經過時的項目（「排版與 logo 尚未在真機測試」「logo 著作權疑慮」）——手機排版已由使用者在真實瀏覽器測試完畢、logo 已整個移除不再適用，尚未清理，因為之前只有口頭提出未獲得使用者確認是否要動。
 
 ## 下一步行動 (Next Steps)
 1. 確認 Render／Vercel 是否已自動部署最新 commit（`54734bb`），並在正式環境實際玩一輪，確認 `questionId` 破壞性變更沒有造成 400 錯誤。
 2. 等 Gemini 免費額度重置後，用 `docs/training.txt` 議題 B 最後一節的測試句重新驗證這次修正對 Gemini 是否有效。
 3. 若對 GPT-4o-mini 仍無效，考慮：(a) 覆寫指令挪到 systemInstruction 最前面、(b) 改用結構化輸出強迫模型先給分類欄位。
-4. 詢問使用者是否要一併清理 README 未完成事項裡兩則已過時的項目。
-5.（低優先權，已列入 README TODO）`server.js` Mock Mode 的關鍵字判斷目前寫死對應兩三題，其餘題目在無金鑰模式下會答非所問，需要時再改成依題目 id 查表判斷。
+4.（低優先權，已列入 README TODO）`server.js` Mock Mode 的關鍵字判斷目前寫死對應兩三題，其餘題目在無金鑰模式下會答非所問，需要時再改成依題目 id 查表判斷。
 
 ## 關鍵設定與上下文 (Key Context & Rules)
 - **GitHub 倉庫**：https://github.com/jamessun0919-ops/turtlesoup（main 分支）。此資料夾往後的專案工作皆推送至此處，除非另有指示。
